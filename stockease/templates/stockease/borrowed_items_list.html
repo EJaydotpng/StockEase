@@ -1,0 +1,43 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Borrowed Items</h2>
+            <p class="text-muted">Currently active loans.</p>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Borrowed On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for borrowing in borrowings %}
+                        <tr>
+                            <td>{{ borrowing.user.username }} (<code>{{ borrowing.user.profile.barcode }}</code>)</td>
+                            <td>{{ borrowing.item.name }} (<code>{{ borrowing.item.barcode }}</code>)</td>
+                            <td>{{ borrowing.quantity }}</td>
+                            <td>{{ borrowing.borrow_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'return_item' borrowing.pk %}" class="btn btn-primary btn-sm">Return</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No items currently borrowed.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

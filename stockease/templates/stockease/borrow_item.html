@@ -1,0 +1,120 @@
+{% extends 'stockease/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                <input type="{{ field.field.widget.input_type }}" 
+                                       name="{{ field.html_name }}" 
+                                       class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                                       id="{{ field.id_for_label }}" 
+                                       value="{{ field.value|default_if_none:'' }}">
+                                {% if field.name == 'user_identifier' %}
+                                    <button type="button" id="scan-user-barcode-btn" class="btn btn-outline-secondary btn-sm mt-1">Scan User Barcode</button>
+                                    <div id="barcode-scanner-container" style="display:none; width:100%; max-width: 480px; margin-top: 10px;">
+                                        <div id="barcode-scanner-video"></div>
+                                        <p id="barcode-scanner-message" class="text-muted mt-2"></p>
+                                    </div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Borrow Item</button>
+                            <a href="{% url 'item_list' %}" class="btn btn-secondary mt-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userIdentifierInput = document.getElementById('id_user_identifier'); // Assuming default ID
+        const scanButton = document.getElementById('scan-user-barcode-btn');
+        const scannerContainer = document.getElementById('barcode-scanner-container');
+        const scannerVideo = document.getElementById('barcode-scanner-video');
+        const scannerMessage = document.getElementById('barcode-scanner-message');
+        let scannerInitialized = false;
+
+        scanButton.addEventListener('click', function() {
+            if (!scannerInitialized) {
+                scannerContainer.style.display = 'block';
+                scannerMessage.textContent = 'Initializing scanner...';
+                Quagga.init({
+                    inputStream : {
+                        name : "Live",
+                        type : "LiveStream",
+                        target: scannerVideo,
+                        constraints: {
+                            width: 480,
+                            height: 320,
+                            facingMode: "environment"
+                        }
+                    },
+                    decoder : {
+                        readers : ["ean_reader", "code_128_reader", "code_39_reader"]
+                    },
+                    locate: true // Highlight the scanned barcode
+                }, function(err) {
+                    if (err) {
+                        console.error(err);
+                        scannerMessage.textContent = 'Error initializing scanner: ' + err.message + '. Please ensure camera access is granted.';
+                        scannerContainer.style.display = 'none';
+                        scannerInitialized = false; // Reset in case of init error
+                        return
+                    }
+                    Quagga.start();
+                    scannerMessage.textContent = 'Scanner started. Point camera at user barcode.';
+                    scannerInitialized = true;
+                    scanButton.textContent = 'Stop Scan';
+                });
+
+                Quagga.onDetected(function(result) {
+                    const code = result.codeResult.code;
+                    if (code) { // Ensure a code was actually detected
+                        userIdentifierInput.value = code;
+                        scannerMessage.textContent = 'Scanned: ' + code;
+                        scannerContainer.style.display = 'none';
+                        Quagga.stop();
+                        scannerInitialized = false;
+                        scanButton.textContent = 'Scan User Barcode';
+                    }
+                });
+            } else {
+                Quagga.stop();
+                scannerContainer.style.display = 'none';
+                scannerMessage.textContent = '';
+                scannerInitialized = false;
+                scanButton.textContent = 'Scan User Barcode';
+            }
+        });
+    });
+</script>
+{% endblock %}

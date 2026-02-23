@@ -1,0 +1,71 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Borrowing History</h2>
+            <p class="text-muted">All past and current borrowing transactions.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'export_borrowing_history' %}" class="btn btn-primary me-2">Export to CSV</a>
+            <a href="{% url 'clear_returned_history' %}" class="btn btn-outline-danger">Clear Returned Logs</a>
+        </div>
+    </div>
+{% if messages %}
+    <div class="row">
+        <div class="col">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Item</th>
+                        <th>Initial Quantity</th>
+                        <th>Borrowed On</th>
+                        <th>Returned On</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history %}
+                        <tr>
+                            <td>{{ record.user.username }} (<code>{{ record.user.profile.barcode }}</code>)</td>
+                            <td>{{ record.item.name }} (<code>{{ record.item.barcode }}</code>)</td>
+                            <td>{{ record.initial_quantity }}</td>
+                            <td>{{ record.borrow_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if record.return_date %}
+                                    {{ record.return_date|date:"M d, Y H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.return_date %}
+                                    <span class="badge bg-success">Returned</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Active</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No borrowing history found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

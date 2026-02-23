@@ -1,0 +1,137 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Inventory Items</h2>
+            <form method="GET" class="d-flex mt-2">
+                <input class="form-control me-2" type="search" placeholder="Search items by name or description" aria-label="Search" name="q" id="item-search-input" value="{{ request.GET.q|default:'' }}">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+            <div id="autocomplete-results" class="list-group position-absolute w-auto" style="z-index: 1000; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if user.is_staff %}
+                <a href="{% url 'item_add' %}" class="btn btn-success me-2">Add New Item</a>
+                <button type="submit" form="print-form" class="btn btn-primary me-2">Print Selected</button>
+                <a href="{% url 'print_barcodes' %}" class="btn btn-info">Print All</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="POST" action="{% url 'print_barcodes' %}" id="print-form">
+        {% csrf_token %}
+        <div class="card shadow">
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Picture</th>
+                            <th>Barcode</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            {% if user.is_staff %}
+                                <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td><input type="checkbox" name="selected_items" value="{{ item.id }}" class="form-check-input"></td>
+                                <td>
+                                    {% if item.image %}
+                                        <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                    {% else %}
+                                        <div style="width: 50px; height: 50px; background-color: #eee; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                            <small class="text-muted">No Image</small>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ item.barcode }}</code></td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.description }}</td>
+                                <td>{{ item.quantity }}</td>
+                                {% if user.is_staff %}
+                                    <td>
+                                        <a href="{% url 'item_edit' item.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                                        <a href="{% url 'item_delete' item.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                                        <a href="{% url 'borrow_item' %}?item_barcode={{ item.barcode }}" class="btn btn-primary btn-sm">Borrow</a>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="{% if user.is_staff %}7{% else %}6{% endif %}" class="text-center">No items found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('item-search-input');
+        const resultsContainer = document.getElementById('autocomplete-results');
+        const searchForm = document.querySelector('.d-flex.mt-2'); // The form for the search input
+
+        let debounceTimeout;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout);
+            const query = this.value;
+
+            if (query.length < 2) { // Only search if query has at least 2 characters
+                resultsContainer.innerHTML = '';
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            debounceTimeout = setTimeout(() => {
+                fetch(`/items/suggestions/?term=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data.length > 0) {
+                            resultsContainer.style.display = 'block';
+                            data.forEach(item => {
+                                const suggestionItem = document.createElement('a');
+                                suggestionItem.href = '#';
+                                suggestionItem.classList.add('list-group-item', 'list-group-item-action');
+                                suggestionItem.textContent = item;
+                                suggestionItem.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    searchInput.value = item;
+                                    resultsContainer.innerHTML = '';
+                                    resultsContainer.style.display = 'none';
+                                    searchForm.submit(); // Submit the form after selecting a suggestion
+                                });
+                                resultsContainer.appendChild(suggestionItem);
+                            });
+                        } else {
+                            resultsContainer.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching autocomplete suggestions:', error);
+                        resultsContainer.style.display = 'none';
+                    });
+            }, 300); // Debounce for 300ms
+        });
+
+        // Hide results when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!searchInput.contains(event.target) && !resultsContainer.contains(event.target)) {
+                resultsContainer.innerHTML = '';
+                resultsContainer.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

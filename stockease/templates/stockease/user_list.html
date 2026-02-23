@@ -1,0 +1,85 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col">
+            <h2>User Management</h2>
+        </div>
+    </div>
+
+    <div class="card shadow mb-5">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Superusers</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>User Barcode</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in superusers %}
+                        <tr>
+                            <td>{{ u.username }} <span class="badge bg-danger">Superuser</span></td>
+                            <td>{{ u.email }}</td>
+                            <td>{% if u.is_active %}<span class="badge bg-primary">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                            <td><code>{{ u.profile.barcode }}</code></td>
+                            <td>
+                                <a href="{% url 'user_edit' u.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                                {# Superusers cannot be deleted via this interface #}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No superusers found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Regular Users</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>User Barcode</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in regular_users %}
+                        <tr>
+                            <td>{{ u.username }} {% if u.is_staff %}<span class="badge bg-success">Admin</span>{% else %}<span class="badge bg-secondary">User</span>{% endif %}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{% if u.is_active %}<span class="badge bg-primary">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                            <td><code>{{ u.profile.barcode }}</code></td>
+                            <td>
+                                <a href="{% url 'user_edit' u.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                                {% if request.user.pk != u.pk %} {# Prevent user from deleting themselves #}
+                                    <a href="{% url 'user_delete' u.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No regular users found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col">
+            <h2>My Currently Borrowed Items</h2>
+            <p class="text-muted">Items you have borrowed and not yet returned.</p>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Borrowed On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for borrowing in borrowings %}
+                        <tr>
+                            <td>{{ borrowing.item.name }}</td>
+                            <td>{{ borrowing.quantity }}</td>
+                            <td>{{ borrowing.borrow_date|date:"M d, Y H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">You currently have no outstanding borrowed items.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

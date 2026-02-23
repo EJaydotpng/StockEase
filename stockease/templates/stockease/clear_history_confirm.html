@@ -1,0 +1,24 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">Clear Returned History</h3>
+                </div>
+                <div class="card-body">
+                    <p>Are you sure you want to permanently delete all <strong>{{ count }}</strong> returned borrowing records? This action cannot be undone.</p>
+                    <p class="text-muted">Note: Active borrowings (items currently out) will not be affected.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">Yes, Permanently Clear Logs</button>
+                            <a href="{% url 'borrowing_history_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

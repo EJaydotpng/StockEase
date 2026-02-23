@@ -1,0 +1,54 @@
+{% extends 'stockease/base.html' %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <p><strong>User:</strong> {{ borrowing.user.username }} (Barcode: <code>{{ borrowing.user.profile.barcode }}</code>)</p>
+                    <p><strong>Item:</strong> {{ borrowing.item.name }} (Barcode: <code>{{ borrowing.item.barcode }}</code>)</p>
+                    <p><strong>Outstanding Quantity:</strong> {{ borrowing.quantity }}</p>
+                    <p><strong>Borrowed On:</strong> {{ borrowing.borrow_date|date:"M d, Y H:i" }}</p>
+
+                    <hr>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                <input type="{{ field.field.widget.input_type }}" 
+                                       name="{{ field.html_name }}" 
+                                       class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                                       id="{{ field.id_for_label }}" 
+                                       value="{{ field.value|default_if_none:'' }}">
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Confirm Return</button>
+                            <a href="{% url 'borrowed_items_list' %}" class="btn btn-secondary mt-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
